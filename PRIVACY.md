@@ -38,4 +38,4 @@ Because PinPilot is a local desktop app, you can remove local data by deleting t
 
 For privacy questions, contact:
 
-your-email@example.com
+utkuuaks@gmail.com
