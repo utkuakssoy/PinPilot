@@ -11,12 +11,14 @@ export function EtsyImportForm({ label }: { label: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importedCount, setImportedCount] = useState<number | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   async function handleImport(event?: React.FormEvent<HTMLFormElement>) {
     event?.preventDefault();
     setLoading(true);
     setError(null);
     setImportedCount(null);
+    setWarning(null);
 
     try {
       const response = await fetch("/api/etsy/import", {
@@ -30,6 +32,7 @@ export function EtsyImportForm({ label }: { label: string }) {
       }
       markEtsyImported();
       setImportedCount(payload.listings?.length ?? 0);
+      setWarning(payload.importWarning ?? null);
       router.push("/dashboard?imported=1");
       router.refresh();
     } catch (importError) {
@@ -42,33 +45,34 @@ export function EtsyImportForm({ label }: { label: string }) {
   return (
     <form onSubmit={handleImport} className="w-full max-w-2xl">
       <label className="block text-sm font-semibold">
-        <span className="mb-2 block text-base">1. Etsy mağaza linkini yapıştır</span>
+        <span className="mb-2 block text-sm text-neutral-300">1. Paste your Etsy shop link</span>
         <span className="flex flex-col gap-3 sm:flex-row">
           <span className="relative flex-1">
-            <LinkIcon className="pointer-events-none absolute left-4 top-3.5 h-5 w-5 text-neutral-400" />
+            <LinkIcon className="pointer-events-none absolute left-4 top-3.5 h-5 w-5 text-neutral-500" />
             <input
               type="url"
               required
               value={shopUrl}
               onChange={(event) => setShopUrl(event.target.value)}
               placeholder="https://www.etsy.com/shop/YourShopName"
-              className="w-full rounded-md border border-neutral-200 bg-white py-3 pl-12 pr-3 text-base focus-ring"
+              className="w-full rounded-md border border-neutral-800 bg-neutral-950 py-3 pl-12 pr-3 text-base text-neutral-100 placeholder:text-neutral-600 focus-ring"
             />
           </span>
           <button
             type="submit"
             disabled={loading || !shopUrl}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-neutral-950 px-5 py-3 text-base font-semibold text-white shadow-sm disabled:opacity-60"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-white px-5 py-3 text-base font-semibold text-black shadow-sm disabled:opacity-60"
           >
             <Download className="h-4 w-4" />
             {loading ? "Importing..." : label}
           </button>
         </span>
       </label>
-      <p className="mt-2 text-sm text-neutral-500">Örnek: https://www.etsy.com/shop/YourShopName</p>
-      {error && <p className="mt-3 text-sm font-medium text-red-700">{error}</p>}
+      <p className="mt-2 text-sm text-neutral-500">Example: https://www.etsy.com/shop/YourShopName</p>
+      {error && <p className="mt-3 text-sm font-medium text-red-400">{error}</p>}
+      {warning && <p className="mt-3 rounded-md border border-amber-900/70 bg-amber-950/30 p-3 text-sm font-medium text-amber-200">{warning}</p>}
       {importedCount !== null && (
-        <p className="mt-3 text-sm font-medium text-emerald-700">
+        <p className="mt-3 text-sm font-medium text-emerald-400">
           Imported {importedCount} real Etsy listing{importedCount === 1 ? "" : "s"}.
         </p>
       )}

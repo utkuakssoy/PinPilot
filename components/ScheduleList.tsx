@@ -38,9 +38,9 @@ export function ScheduleList({ initialDrafts }: { initialDrafts: PinDraftView[] 
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-neutral-900 bg-[#050505] shadow-sm">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
+          <thead className="border-b border-neutral-900 bg-black text-neutral-500">
             <tr>
               <th className="px-4 py-3 font-medium">Pin</th>
               <th className="px-4 py-3 font-medium">Status</th>
@@ -59,7 +59,7 @@ export function ScheduleList({ initialDrafts }: { initialDrafts: PinDraftView[] 
                 <td className="px-4 py-4">
                   <input
                     type="datetime-local"
-                    className="rounded-md border border-neutral-200 px-3 py-2 text-sm focus-ring"
+                    className="rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus-ring"
                     onChange={(event) => {
                       if (event.target.value) {
                         scheduleDraft(draft, event.target.value);

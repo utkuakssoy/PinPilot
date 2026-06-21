@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { EtsyListingView } from "@/types";
 
@@ -11,6 +11,7 @@ export type ImportedEtsyShop = {
   };
   listings: EtsyListingView[];
   importedAt: string;
+  importWarning?: string;
 };
 
 export type PinterestAuth = {
@@ -27,19 +28,37 @@ export type PinterestAppCredentials = {
   savedAt: string;
 };
 
+export type AiCredentials = {
+  geminiApiKey?: string;
+  openaiApiKey?: string;
+  savedAt: string;
+};
+
 const dataDir = path.join(process.cwd(), "data");
 const etsyImportPath = path.join(dataDir, "etsy-import.json");
 const pinterestAuthPath = path.join(dataDir, "pinterest-auth.json");
 const pinterestCredentialsPath = path.join(dataDir, "pinterest-credentials.json");
+const aiCredentialsPath = path.join(dataDir, "ai-credentials.json");
+
+let importedShopCache: { mtimeMs: number; value: ImportedEtsyShop | null } | null = null;
 
 export function readImportedEtsyShop(): ImportedEtsyShop | null {
   if (!existsSync(etsyImportPath)) {
+    importedShopCache = null;
     return null;
   }
 
   try {
-    return JSON.parse(readFileSync(etsyImportPath, "utf8")) as ImportedEtsyShop;
+    const mtimeMs = statSync(etsyImportPath).mtimeMs;
+    if (importedShopCache?.mtimeMs === mtimeMs) {
+      return importedShopCache.value;
+    }
+
+    const value = JSON.parse(readFileSync(etsyImportPath, "utf8")) as ImportedEtsyShop;
+    importedShopCache = { mtimeMs, value };
+    return value;
   } catch {
+    importedShopCache = null;
     return null;
   }
 }
@@ -50,6 +69,7 @@ export function saveImportedEtsyShop(importedShop: ImportedEtsyShop) {
   }
 
   writeFileSync(etsyImportPath, JSON.stringify(importedShop, null, 2), "utf8");
+  importedShopCache = { mtimeMs: statSync(etsyImportPath).mtimeMs, value: importedShop };
 }
 
 export function readPinterestAuth(): PinterestAuth | null {
@@ -91,6 +111,30 @@ export function savePinterestAppCredentials(credentials: Omit<PinterestAppCreden
 
   writeFileSync(
     pinterestCredentialsPath,
+    JSON.stringify({ ...credentials, savedAt: new Date().toISOString() }, null, 2),
+    "utf8"
+  );
+}
+
+export function readAiCredentials(): AiCredentials | null {
+  if (!existsSync(aiCredentialsPath)) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(readFileSync(aiCredentialsPath, "utf8")) as AiCredentials;
+  } catch {
+    return null;
+  }
+}
+
+export function saveAiCredentials(credentials: Omit<AiCredentials, "savedAt">) {
+  if (!existsSync(dataDir)) {
+    mkdirSync(dataDir, { recursive: true });
+  }
+
+  writeFileSync(
+    aiCredentialsPath,
     JSON.stringify({ ...credentials, savedAt: new Date().toISOString() }, null, 2),
     "utf8"
   );

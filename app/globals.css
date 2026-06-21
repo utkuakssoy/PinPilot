@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f7f5;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #ededed;
 }
 
 body {
@@ -24,5 +24,10 @@ textarea {
 }
 
 .focus-ring:focus-visible {
-  outline-color: #171717;
+  outline-color: #ffffff;
+}
+
+::selection {
+  background: #ffffff;
+  color: #000000;
 }

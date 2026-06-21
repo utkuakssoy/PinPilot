@@ -1,5 +1,6 @@
 import OpenAI from "openai";
-import { env, isGeminiConfigured, isOpenAiConfigured } from "@/lib/env";
+import { env } from "@/lib/env";
+import { readAiCredentials } from "@/services/local-store";
 import type { EtsyListingView, SeoGenerationResult } from "@/types";
 
 const fallbackSeo: SeoGenerationResult = {
@@ -28,19 +29,39 @@ const fallbackSeo: SeoGenerationResult = {
 };
 
 export async function generateSeoForListing(listing: EtsyListingView): Promise<SeoGenerationResult> {
-  if (isGeminiConfigured) {
-    return generateSeoWithGemini(listing);
+  const credentials = getAiCredentials();
+
+  if (credentials.geminiApiKey) {
+    return generateSeoWithGemini(listing, credentials.geminiApiKey);
   }
 
-  if (isOpenAiConfigured) {
-    return generateSeoWithOpenAi(listing);
+  if (credentials.openaiApiKey) {
+    return generateSeoWithOpenAi(listing, credentials.openaiApiKey);
   }
 
   return generateMockSeo(listing);
 }
 
-async function generateSeoWithOpenAi(listing: EtsyListingView): Promise<SeoGenerationResult> {
-  const client = new OpenAI({ apiKey: env.openaiApiKey });
+export function getAiCredentials() {
+  const storedCredentials = readAiCredentials();
+
+  return {
+    geminiApiKey: storedCredentials?.geminiApiKey || env.geminiApiKey,
+    openaiApiKey: storedCredentials?.openaiApiKey || env.openaiApiKey
+  };
+}
+
+export function getAiStatus() {
+  const credentials = getAiCredentials();
+
+  return {
+    geminiConfigured: Boolean(credentials.geminiApiKey),
+    openaiConfigured: Boolean(credentials.openaiApiKey)
+  };
+}
+
+async function generateSeoWithOpenAi(listing: EtsyListingView, apiKey: string): Promise<SeoGenerationResult> {
+  const client = new OpenAI({ apiKey });
   const response = await client.chat.completions.create({
     model: "gpt-4.1-mini",
     messages: [
@@ -66,10 +87,10 @@ async function generateSeoWithOpenAi(listing: EtsyListingView): Promise<SeoGener
   return parsed;
 }
 
-async function generateSeoWithGemini(listing: EtsyListingView): Promise<SeoGenerationResult> {
+async function generateSeoWithGemini(listing: EtsyListingView, apiKey: string): Promise<SeoGenerationResult> {
   const model = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.geminiApiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

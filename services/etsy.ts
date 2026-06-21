@@ -1,6 +1,9 @@
-import { isEtsyConfigured } from "@/lib/env";
 import type { EtsyListingView } from "@/types";
+import { env } from "@/lib/env";
 import { readImportedEtsyShop, saveImportedEtsyShop } from "@/services/local-store";
+
+const MAX_PUBLIC_LISTINGS = 120;
+const MAX_SHOP_PAGES = 8;
 
 export async function importEtsyShop(shopUrl: string) {
   const parsedShop = parseEtsyShopUrl(shopUrl);
@@ -8,15 +11,9 @@ export async function importEtsyShop(shopUrl: string) {
     throw new Error("Please enter a valid Etsy shop URL, for example https://www.etsy.com/shop/ShopName.");
   }
 
-  if (!isEtsyConfigured) {
-    const importedShop = await importPublicEtsyShop(parsedShop);
-    saveImportedEtsyShop(importedShop);
-    return { mode: "public-shop" as const, ...importedShop };
-  }
-
-  const importedShop = await importPublicEtsyShop(parsedShop);
+  const importedShop = env.etsyApiKey ? await importOfficialEtsyShop(parsedShop, env.etsyApiKey) : await importPublicEtsyShop(parsedShop);
   saveImportedEtsyShop(importedShop);
-  return { mode: "api-ready" as const, ...importedShop };
+  return { mode: env.etsyApiKey ? ("official-api" as const) : ("public-shop" as const), ...importedShop };
 }
 
 export async function getEtsyListings() {
@@ -57,8 +54,8 @@ function parseEtsyShopUrl(input: string): ParsedShopUrl | null {
 }
 
 async function importPublicEtsyShop(shop: ParsedShopUrl) {
-  const rssListings = await fetchShopRss(shop);
-  const listings = rssListings.length ? rssListings : await fetchShopPageListings(shop);
+  const [rssListings, pageListings] = await Promise.all([fetchShopRss(shop), fetchShopPageListings(shop)]);
+  const listings = mergeListings([...rssListings, ...pageListings]).slice(0, MAX_PUBLIC_LISTINGS);
 
   if (!listings.length) {
     throw new Error(
@@ -74,8 +71,146 @@ async function importPublicEtsyShop(shop: ParsedShopUrl) {
       url: shop.url
     },
     listings,
+    importedAt: new Date().toISOString(),
+    importWarning:
+      listings.length <= 10
+        ? "Public Etsy import returned only the listings Etsy exposes without API access. Add an Etsy API key on the server to import the full catalog."
+        : undefined
+  };
+}
+
+async function importOfficialEtsyShop(shop: ParsedShopUrl, apiKey: string) {
+  const shopId = await fetchOfficialShopId(shop, apiKey);
+  const listings = await fetchOfficialShopListings(shop, apiKey, shopId);
+
+  if (!listings.length) {
+    return importPublicEtsyShop(shop);
+  }
+
+  return {
+    shop: {
+      id: `shop-${slug(shop.shopName)}`,
+      etsyShopId: String(shopId),
+      name: shop.shopName,
+      url: shop.url
+    },
+    listings,
     importedAt: new Date().toISOString()
   };
+}
+
+async function fetchOfficialShopId(shop: ParsedShopUrl, apiKey: string) {
+  const data = await fetchEtsyApi<{ results?: Array<{ shop_id?: number; shop_name?: string }> }>(
+    `/shops?shop_name=${encodeURIComponent(shop.shopName)}`,
+    apiKey
+  );
+  const exactShop = data.results?.find((result) => result.shop_name?.toLowerCase() === shop.shopName.toLowerCase());
+  const shopId = exactShop?.shop_id ?? data.results?.[0]?.shop_id;
+
+  if (!shopId) {
+    throw new Error("Etsy API could not find this shop. Check the shop link or API key.");
+  }
+
+  return shopId;
+}
+
+async function fetchOfficialShopListings(shop: ParsedShopUrl, apiKey: string, shopId: number) {
+  const listings: EtsyListingView[] = [];
+  const limit = 100;
+
+  for (let offset = 0; offset < MAX_PUBLIC_LISTINGS; offset += limit) {
+    const data = await fetchEtsyApi<{ count?: number; results?: EtsyApiListing[] }>(
+      `/shops/${shopId}/listings/active?limit=${limit}&offset=${offset}&includes=Images`,
+      apiKey
+    );
+
+    const pageListings = data.results ?? [];
+    listings.push(...pageListings.map((listing, index) => officialListingToView(shop, listing, offset + index)));
+
+    if (pageListings.length < limit || listings.length >= (data.count ?? MAX_PUBLIC_LISTINGS)) {
+      break;
+    }
+  }
+
+  return mergeListings(listings).slice(0, MAX_PUBLIC_LISTINGS);
+}
+
+async function fetchEtsyApi<T>(path: string, apiKey: string): Promise<T> {
+  const response = await fetch(`https://api.etsy.com/v3/application${path}`, {
+    headers: {
+      "x-api-key": apiKey,
+      Accept: "application/json"
+    },
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    throw new Error(`Etsy API request failed with status ${response.status}.`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+type EtsyApiListing = {
+  listing_id?: number;
+  title?: string;
+  description?: string;
+  price?: string | { amount?: number; divisor?: number; currency_code?: string };
+  currency_code?: string;
+  tags?: string[];
+  taxonomy_path?: string[];
+  category_path?: string[];
+  url?: string;
+  state?: string;
+  created_timestamp?: number;
+  updated_timestamp?: number;
+  images?: Array<{
+    url_570xN?: string;
+    url_fullxfull?: string;
+    url_170x135?: string;
+  }>;
+};
+
+function officialListingToView(shop: ParsedShopUrl, listing: EtsyApiListing, index: number): EtsyListingView {
+  const listingId = String(listing.listing_id ?? `${shop.shopName}-${index + 1}`);
+  const price = normalizeApiPrice(listing.price);
+  const category = listing.taxonomy_path?.join(" / ") ?? listing.category_path?.join(" / ") ?? "Etsy Shop Listing";
+  const createdAt = listing.created_timestamp ? new Date(listing.created_timestamp * 1000).toISOString() : new Date().toISOString();
+  const updatedAt = listing.updated_timestamp ? new Date(listing.updated_timestamp * 1000).toISOString() : createdAt;
+
+  return {
+    id: `listing-${listingId}`,
+    shopId: `shop-${slug(shop.shopName)}`,
+    etsyListingId: listingId,
+    title: listing.title ?? "Untitled Etsy listing",
+    description: listing.description ?? listing.title ?? "",
+    price: price.amount,
+    currency: price.currency ?? listing.currency_code ?? "USD",
+    images: (listing.images ?? [])
+      .map((image) => image.url_570xN ?? image.url_fullxfull ?? image.url_170x135)
+      .filter((image): image is string => Boolean(image)),
+    tags: listing.tags?.length ? listing.tags : inferTags(listing.title ?? ""),
+    category,
+    listingUrl: listing.url ?? `https://www.etsy.com/listing/${listingId}`,
+    status: listing.state === "active" ? "active" : "inactive",
+    createdAt,
+    updatedAt
+  };
+}
+
+function normalizeApiPrice(price: EtsyApiListing["price"]) {
+  if (typeof price === "string") {
+    return { amount: Number(price) || 0, currency: undefined };
+  }
+
+  if (price && typeof price.amount === "number") {
+    return {
+      amount: price.amount / (price.divisor || 100),
+      currency: price.currency_code
+    };
+  }
+
+  return { amount: 0, currency: undefined };
 }
 
 async function fetchShopRss(shop: ParsedShopUrl): Promise<EtsyListingView[]> {
@@ -92,7 +227,7 @@ async function fetchShopRss(shop: ParsedShopUrl): Promise<EtsyListingView[]> {
   }
 
   const xml = await response.text();
-  const items = Array.from(xml.matchAll(/<item>([\s\S]*?)<\/item>/g)).slice(0, 24);
+  const items = Array.from(xml.matchAll(/<item>([\s\S]*?)<\/item>/g)).slice(0, MAX_PUBLIC_LISTINGS);
 
   return items
     .map((match, index) => {
@@ -121,7 +256,38 @@ async function fetchShopRss(shop: ParsedShopUrl): Promise<EtsyListingView[]> {
 }
 
 async function fetchShopPageListings(shop: ParsedShopUrl): Promise<EtsyListingView[]> {
-  const response = await fetch(shop.url, {
+  const listings: EtsyListingView[] = [];
+  const seen = new Set<string>();
+
+  for (let page = 1; page <= MAX_SHOP_PAGES && listings.length < MAX_PUBLIC_LISTINGS; page += 1) {
+    const pageListings = await fetchShopPageListingBatch(shop, page);
+    let newItems = 0;
+
+    for (const listing of pageListings) {
+      if (seen.has(listing.etsyListingId)) {
+        continue;
+      }
+
+      seen.add(listing.etsyListingId);
+      listings.push(listing);
+      newItems += 1;
+    }
+
+    if (page > 1 && newItems === 0) {
+      break;
+    }
+  }
+
+  return listings;
+}
+
+async function fetchShopPageListingBatch(shop: ParsedShopUrl, page: number): Promise<EtsyListingView[]> {
+  const url = new URL(shop.url);
+  if (page > 1) {
+    url.searchParams.set("page", String(page));
+  }
+
+  const response = await fetch(url.toString(), {
     headers: {
       "User-Agent": "Mozilla/5.0 PinPilot local desktop app",
       Accept: "text/html"
@@ -133,12 +299,8 @@ async function fetchShopPageListings(shop: ParsedShopUrl): Promise<EtsyListingVi
     return [];
   }
 
-  const html = await response.text();
-  const listingUrls = Array.from(
-    new Set(
-      Array.from(html.matchAll(/https:\/\/www\.etsy\.com\/listing\/(\d+)\/[^"'<\s?]+/g)).map((match) => match[0])
-    )
-  ).slice(0, 24);
+  const html = normalizeHtml(await response.text());
+  const listingUrls = extractListingUrls(html).slice(0, MAX_PUBLIC_LISTINGS);
 
   return listingUrls.map((listingUrl, index) => {
     const listingId = extractListingId(listingUrl) ?? `${shop.shopName}-${index + 1}`;
@@ -154,6 +316,22 @@ async function fetchShopPageListings(shop: ParsedShopUrl): Promise<EtsyListingVi
       index
     });
   });
+}
+
+function mergeListings(listings: EtsyListingView[]) {
+  const seen = new Set<string>();
+  const merged: EtsyListingView[] = [];
+
+  for (const listing of listings) {
+    if (seen.has(listing.etsyListingId)) {
+      continue;
+    }
+
+    seen.add(listing.etsyListingId);
+    merged.push(listing);
+  }
+
+  return merged;
 }
 
 function toListing({
@@ -227,6 +405,28 @@ function extractNearbyImage(html: string, listingId: string) {
 
 function extractListingId(url: string) {
   return url.match(/\/listing\/(\d+)\//)?.[1];
+}
+
+function extractListingUrls(html: string) {
+  const urls = new Set<string>();
+  const matches = html.matchAll(/(?:https?:\/\/www\.etsy\.com)?\/listing\/(\d+)\/([^"'<>\s?]+)/g);
+
+  for (const match of matches) {
+    const listingId = match[1];
+    const slugPart = match[2].replace(/[#&].*$/, "");
+
+    if (!listingId || !slugPart || slugPart.includes("{")) {
+      continue;
+    }
+
+    urls.add(`https://www.etsy.com/listing/${listingId}/${slugPart}`);
+  }
+
+  return Array.from(urls);
+}
+
+function normalizeHtml(html: string) {
+  return html.replace(/\\u002F/g, "/").replace(/\\\//g, "/").replace(/&amp;/g, "&");
 }
 
 function titleFromUrl(url: string) {

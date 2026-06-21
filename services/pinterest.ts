@@ -1,4 +1,3 @@
-import { env, isPinterestConfigured } from "@/lib/env";
 import { demoPinDrafts } from "@/lib/demo-data";
 import {
   readPinterestAppCredentials,
@@ -19,8 +18,8 @@ export function getPinterestCredentials() {
   const storedCredentials = readPinterestAppCredentials();
 
   return {
-    clientId: env.pinterestClientId || storedCredentials?.clientId,
-    clientSecret: env.pinterestClientSecret || storedCredentials?.clientSecret
+    clientId: storedCredentials?.clientId,
+    clientSecret: storedCredentials?.clientSecret
   };
 }
 

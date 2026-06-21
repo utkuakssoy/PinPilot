@@ -11,8 +11,8 @@ export default async function SettingsPage({
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-sm font-medium text-neutral-500">Uygulama</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Ayarlar</h1>
+        <p className="text-sm font-medium text-neutral-500">Project</p>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-neutral-100">Settings</h1>
       </header>
       <PinterestConnectCard connected={connected === "1"} error={error} />
       <SettingsPanel />

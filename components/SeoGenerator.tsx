@@ -141,17 +141,17 @@ export function SeoGenerator({
 
   return (
     <div className="space-y-5">
-      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-        <div className="inline-flex items-center gap-2 rounded-full bg-neutral-100 px-3 py-1 text-sm font-semibold text-neutral-700">
-          <span className="grid h-5 w-5 place-items-center rounded-full bg-neutral-950 text-xs text-white">2</span>
-          Ürün seç
+      <section className="rounded-lg border border-neutral-900 bg-[#050505] p-6 shadow-sm">
+        <div className="inline-flex items-center gap-2 rounded-full border border-neutral-800 bg-black px-3 py-1 text-sm font-semibold text-neutral-400">
+          <span className="grid h-5 w-5 place-items-center rounded-full bg-white text-xs text-black">2</span>
+          Select product
         </div>
-        <label className="mt-4 block text-base font-semibold" htmlFor="product">
-          Hangi ürün için pin hazırlayalım?
+        <label className="mt-4 block text-base font-semibold text-neutral-100" htmlFor="product">
+          Which product should we prepare?
         </label>
         <select
           id="product"
-          className="mt-2 w-full rounded-md border border-neutral-200 bg-white px-3 py-3 text-base focus-ring"
+          className="mt-2 w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-3 text-base text-neutral-100 focus-ring"
           value={productId}
           onChange={(event) => {
             setProductId(event.target.value);
@@ -166,18 +166,18 @@ export function SeoGenerator({
           ))}
         </select>
         {selectedProduct && (
-          <div className="mt-4 rounded-md bg-neutral-50 p-4 text-sm leading-6 text-neutral-700">
-            <p className="font-medium text-neutral-950">{selectedProduct.category}</p>
+          <div className="mt-4 rounded-md border border-neutral-900 bg-black p-4 text-sm leading-6 text-neutral-500">
+            <p className="font-medium text-neutral-200">{selectedProduct.category}</p>
             <p className="mt-1 line-clamp-4">{selectedProduct.description}</p>
           </div>
         )}
         <button
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-5 py-3 text-base font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-5 py-3 text-base font-semibold text-black shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
           onClick={handleGenerate}
           disabled={loading || !selectedProduct}
         >
           <Sparkles className="h-4 w-4" />
-          3. Pinterest SEO oluştur
+          3. Generate marketing copy
         </button>
         {loading && <div className="mt-4"><LoadingState label="Generating SEO content" /></div>}
         {error && <p className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
@@ -185,34 +185,34 @@ export function SeoGenerator({
       {result ? (
         <section className="grid gap-5 xl:grid-cols-[1fr_420px]">
           <SeoResultCard result={result} />
-          <div className="h-fit rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-            <div className="inline-flex items-center gap-2 rounded-full bg-neutral-100 px-3 py-1 text-sm font-semibold text-neutral-700">
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-neutral-950 text-xs text-white">4</span>
-              Son adım
+          <div className="h-fit rounded-lg border border-neutral-900 bg-[#050505] p-6 shadow-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-neutral-800 bg-black px-3 py-1 text-sm font-semibold text-neutral-400">
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-white text-xs text-black">4</span>
+              Final step
             </div>
-            <h2 className="mt-4 text-2xl font-semibold tracking-tight">Pin taslağı oluştur</h2>
-            <p className="mt-2 text-sm leading-6 text-neutral-600">
-              PinPilot ilk başlığı, ilk açıklamayı ve ilk konsepti otomatik seçti. İstersen sadece tarih seç.
+            <h2 className="mt-4 text-2xl font-semibold tracking-tight text-neutral-100">Create draft</h2>
+            <p className="mt-2 text-sm leading-6 text-neutral-500">
+              PinPilot selected the first title, description, and concept. Choose a board or schedule time.
             </p>
             {boards.length ? (
               <>
                 <div className="mt-4 space-y-4">
                   <Field label="Pinterest board">
-                    <select className="w-full rounded-md border border-neutral-200 px-3 py-3 text-base focus-ring" value={boardId} onChange={(event) => setBoardId(event.target.value)}>
+                    <select className="w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-3 text-base text-neutral-100 focus-ring" value={boardId} onChange={(event) => setBoardId(event.target.value)}>
                       {boards.map((board) => (
                         <option key={board.id} value={board.id}>{board.name}</option>
                       ))}
                     </select>
                   </Field>
                   <Field label="Ne zaman yayınlansın?">
-                    <input className="w-full rounded-md border border-neutral-200 px-3 py-3 text-base focus-ring" type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} />
+                    <input className="w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-3 text-base text-neutral-100 focus-ring" type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} />
                   </Field>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <button
                     onClick={handleCreateDraft}
                     disabled={draftLoading || !boardId}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-5 py-3 text-base font-semibold text-white shadow-sm disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-5 py-3 text-base font-semibold text-black shadow-sm disabled:opacity-60"
                   >
                     {scheduledAt ? <CalendarClock className="h-5 w-5" /> : <ImagePlus className="h-5 w-5" />}
                     {draftLoading ? "Kaydediliyor..." : scheduledAt ? "Pin oluştur ve planla" : "Pin taslağı oluştur"}
@@ -222,7 +222,7 @@ export function SeoGenerator({
                     <button
                       onClick={handlePublishDraft}
                       disabled={publishLoading || createdDraft.status === "published"}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-neutral-200 bg-white px-5 py-3 text-base font-semibold shadow-sm disabled:opacity-60"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-neutral-800 bg-black px-5 py-3 text-base font-semibold text-neutral-100 shadow-sm disabled:opacity-60"
                     >
                       {publishLoading ? "Pinterest’e gönderiliyor..." : createdDraft.status === "published" ? "Pinterest’e yayınlandı" : "Pinterest’e şimdi yayınla"}
                     </button>
@@ -230,34 +230,34 @@ export function SeoGenerator({
                 </div>
               </>
             ) : (
-              <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-4">
-                <p className="text-sm font-semibold text-amber-900">Önce Pinterest hesabını bağla.</p>
-                <Link href="/connect/pinterest" className="mt-3 inline-flex items-center gap-2 rounded-md bg-neutral-950 px-4 py-2 text-sm font-semibold text-white">
-                  Pinterest’e giriş yap
+              <div className="mt-5 rounded-md border border-amber-900/60 bg-amber-950/20 p-4">
+                <p className="text-sm font-semibold text-amber-300">Connect a social account first.</p>
+                <Link href="/connect/pinterest" className="mt-3 inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-black">
+                  Connect account
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             )}
             <div className="mt-4 flex flex-wrap items-center gap-3">
               {createdDraft && (
-                <Link href="/schedule" className="text-sm font-semibold text-neutral-950 underline underline-offset-4">
-                  Planı gör
+                <Link href="/schedule" className="text-sm font-semibold text-neutral-100 underline underline-offset-4">
+                  View schedule
                 </Link>
               )}
-              {createdDraft && <p className="text-sm font-medium text-emerald-700">Hazır. Pin taslağı kaydedildi.</p>}
+              {createdDraft && <p className="text-sm font-medium text-emerald-400">Draft saved.</p>}
               {publishedUrl && (
-                <a href={publishedUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-neutral-950 underline underline-offset-4">
-                  Pinterest’te aç
+                <a href={publishedUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-neutral-100 underline underline-offset-4">
+                  Open published post
                 </a>
               )}
-              {draftError && <p className="text-sm font-medium text-red-700">{draftError}</p>}
-              {publishError && <p className="text-sm font-medium text-red-700">{publishError}</p>}
+              {draftError && <p className="text-sm font-medium text-red-400">{draftError}</p>}
+              {publishError && <p className="text-sm font-medium text-red-400">{publishError}</p>}
             </div>
           </div>
         </section>
       ) : (
-        <div className="grid min-h-72 place-items-center rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-base text-neutral-500">
-          SEO sonucu burada görünecek. Önce yukarıdaki büyük butona bas.
+        <div className="grid min-h-72 place-items-center rounded-lg border border-dashed border-neutral-800 bg-[#050505] p-8 text-center text-base text-neutral-500">
+          Generated content will appear here.
         </div>
       )}
     </div>

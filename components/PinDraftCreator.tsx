@@ -64,34 +64,34 @@ export function PinDraftCreator({ products, boards }: { products: EtsyListingVie
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+    <form onSubmit={handleSubmit} className="rounded-lg border border-neutral-900 bg-[#050505] p-5 shadow-sm">
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Product">
-          <select className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus-ring" value={productId} onChange={(event) => handleProductChange(event.target.value)}>
+          <select className="w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus-ring" value={productId} onChange={(event) => handleProductChange(event.target.value)}>
             {products.map((item) => (
               <option key={item.id} value={item.id}>{item.title}</option>
             ))}
           </select>
         </Field>
         <Field label="Board">
-          <select className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus-ring" value={boardId} onChange={(event) => setBoardId(event.target.value)}>
+          <select className="w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus-ring" value={boardId} onChange={(event) => setBoardId(event.target.value)}>
             {boards.map((board) => (
               <option key={board.id} value={board.id}>{board.name}</option>
             ))}
           </select>
         </Field>
         <Field label="Pin title">
-          <input className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus-ring" value={title} onChange={(event) => setTitle(event.target.value)} />
+          <input className="w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus-ring" value={title} onChange={(event) => setTitle(event.target.value)} />
         </Field>
         <Field label="Schedule time">
-          <input className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus-ring" type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} />
+          <input className="w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 focus-ring" type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} />
         </Field>
       </div>
       <Field label="Pin description" className="mt-4">
-        <textarea className="min-h-28 w-full rounded-md border border-neutral-200 px-3 py-2 text-sm leading-6 focus-ring" value={description} onChange={(event) => setDescription(event.target.value)} />
+        <textarea className="min-h-28 w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm leading-6 text-neutral-100 focus-ring" value={description} onChange={(event) => setDescription(event.target.value)} />
       </Field>
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button className="inline-flex items-center gap-2 rounded-md bg-neutral-950 px-4 py-2 text-sm font-medium text-white shadow-sm disabled:opacity-60" disabled={loading}>
+        <button className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-black shadow-sm disabled:opacity-60" disabled={loading}>
           <ImagePlus className="h-4 w-4" />
           {loading ? "Creating..." : "Create pin draft"}
         </button>

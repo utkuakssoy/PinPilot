@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { isDatabaseConfigured } from "@/lib/env";
-import { prisma } from "@/lib/prisma";
-import { demoUser } from "@/lib/demo-data";
 import { generateSeoForListing } from "@/services/ai";
 import type { EtsyListingView } from "@/types";
 
@@ -27,17 +24,6 @@ export async function POST(request: Request) {
   try {
     const listing = listingSchema.parse(await request.json()) as EtsyListingView;
     const output = await generateSeoForListing(listing);
-
-    if (isDatabaseConfigured && !listing.id.startsWith("listing-")) {
-      await prisma.aiSeoGeneration.create({
-        data: {
-          userId: demoUser.id,
-          listingId: listing.id,
-          input: listing,
-          output
-        }
-      });
-    }
 
     return NextResponse.json({ output });
   } catch (error) {
