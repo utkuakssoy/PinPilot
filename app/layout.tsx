@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "PinPilot",
-  description: "Pinterest SEO and scheduling for Etsy sellers"
+  description: "Visual marketing post generation and scheduling for online sellers"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
